@@ -1,62 +1,59 @@
-use libc;
-use std::{error, hint, mem::zeroed};
-
-use crate::command_trait::EthtoolCommand;
 use libc::ifreq;
+use std::mem::zeroed;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum IfError<E: error::Error + 'static> {
+#[derive(Debug)]
+pub enum IfError {
     IfNameToLong,
-    ExecError(E),
+    ExecError(std::io::Error),
     Other(String),
 }
 
-impl<E: error::Error + 'static> std::fmt::Display for IfError<E> {
+impl std::fmt::Display for IfError {
     #[inline(always)]
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         std::fmt::Debug::fmt(self, f)
     }
 }
 
-impl<E: error::Error + 'static> error::Error for IfError<E> {
-    #[inline(always)]
-    fn source(&self) -> Option<&(dyn error::Error + 'static)> {
-        use self::IfError::*;
+// impl<E: error::Error + 'static> error::Error for IfError {
+//     #[inline(always)]
+//     fn source(&self) -> Option<&(dyn error::Error + 'static)> {
+//         use self::IfError::*;
 
-        match self {
-            &ExecError(ref error) => Some(error),
+//         match self {
+//             &ExecError(ref error) => Some(error),
 
-            &IfNameToLong => None,
+//             &IfNameToLong => None,
 
-            &Other(..) => None,
-        }
-    }
+//             &Other(..) => None,
+//         }
+//     }
 
-    fn description(&self) -> &str {
-        "description() is deprecated; use Display"
-    }
+//     fn description(&self) -> &str {
+//         "description() is deprecated; use Display"
+//     }
 
-    fn cause(&self) -> Option<&dyn error::Error> {
-        self.source()
-    }
-}
+//     fn cause(&self) -> Option<&dyn error::Error> {
+//         self.source()
+//     }
+// }
 
-impl IfError<std::convert::Infallible> {
-    #[inline(always)]
-    pub(crate) fn map_error<E2: error::Error + 'static>(self) -> IfError<E2> {
-        use self::IfError::*;
+// impl IfError {
+//     #[inline(always)]
+//     pub(crate) fn map_error<E2: error::Error + 'static>(self) -> IfError {
+//         use self::IfError::*;
 
-        match self {
-            ExecError(e) => unsafe { hint::unreachable_unchecked() },
+//         match self {
+//             ExecError(e) => unsafe { hint::unreachable_unchecked() },
 
-            IfNameToLong => IfNameToLong,
+//             IfNameToLong => IfNameToLong,
 
-            Other(other) => Other(other),
-        }
-    }
-}
+//             Other(other) => Other(other),
+//         }
+//     }
+// }
 pub struct IfreqWrapper {
-    ifreq: ifreq,
+    pub ifreq: ifreq,
 }
 
 impl IfreqWrapper {
@@ -66,18 +63,18 @@ impl IfreqWrapper {
         }
     }
 
-    // pub fn from_name<E: error::Error + 'static>(name: &str) -> Result<IfreqWrapper, IfError<E>> {
-    //     let ifreqWrapper = IfreqWrapper::new();
-    //     let r = ifreqWrapper.set_name(name)?;
-    //     Ok(ifreqWrapper)
+    // pub fn from_name<E: error::Error + 'static>(name: &str) -> Result<ifreq_wrapper, IfError<E>> {
+    //     let ifreq_wrapper = ifreq_wrapper::new();
+    //     let r = ifreq_wrapper.set_name(name)?;
+    //     Ok(ifreq_wrapper)
     // }
-    pub fn from_name<E: error::Error + 'static>(name: &str) -> Result<IfreqWrapper, IfError<E>> {
-        let ifreqWrapper = IfreqWrapper::new();
-        let r = ifreqWrapper.set_name(name)?;
-        Ok(ifreqWrapper)
+    pub fn from_name(name: &str) -> Result<IfreqWrapper, IfError> {
+        let mut ifreq_wrapper = IfreqWrapper::new();
+        ifreq_wrapper.set_name(name)?;
+        Ok(ifreq_wrapper)
     }
 
-    pub fn set_name<E: error::Error + 'static>(&mut self, name: &str) -> Result<(), IfError<E>> {
+    pub fn set_name(&mut self, name: &str) -> Result<(), IfError> {
         if name.len() >= libc::IF_NAMESIZE {
             Err(IfError::IfNameToLong)
         } else {
@@ -86,18 +83,6 @@ impl IfreqWrapper {
             }
             Ok(())
         }
-    }
-
-    pub fn set_ifru_data<C: EthtoolCommand, E: error::Error + 'static>(
-        &mut self,
-        command: C,
-    ) -> Result<(), IfError<E>> {
-        self.ifreq.ifr_ifru.ifru_data = ifru_data;
-        Ok(())
-    }
-
-    pub fn to_ifreq(&self) -> ifreq {
-        self.ifreq
     }
 }
 
