@@ -1,4 +1,3 @@
-use libc::ifreq;
 use std::mem::zeroed;
 
 #[derive(Debug)]
@@ -15,28 +14,28 @@ impl std::fmt::Display for IfError {
     }
 }
 
-// impl<E: error::Error + 'static> error::Error for IfError {
-//     #[inline(always)]
-//     fn source(&self) -> Option<&(dyn error::Error + 'static)> {
-//         use self::IfError::*;
+impl std::error::Error for IfError {
+    #[inline(always)]
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        use self::IfError::*;
 
-//         match self {
-//             &ExecError(ref error) => Some(error),
+        match self {
+            &ExecError(ref error) => Some(error),
 
-//             &IfNameToLong => None,
+            &IfNameToLong => None,
 
-//             &Other(..) => None,
-//         }
-//     }
+            &Other(..) => None,
+        }
+    }
 
-//     fn description(&self) -> &str {
-//         "description() is deprecated; use Display"
-//     }
+    fn description(&self) -> &str {
+        "description() is deprecated; use Display"
+    }
 
-//     fn cause(&self) -> Option<&dyn error::Error> {
-//         self.source()
-//     }
-// }
+    fn cause(&self) -> Option<&dyn std::error::Error> {
+        self.source()
+    }
+}
 
 // impl IfError {
 //     #[inline(always)]
@@ -52,24 +51,46 @@ impl std::fmt::Display for IfError {
 //         }
 //     }
 // }
-pub struct IfreqWrapper {
-    pub ifreq: ifreq,
+
+#[repr(C)]
+#[derive(Copy, Clone)]
+pub union IfreqIfrn {
+    /// `ifr_name`.
+    pub ifrn_name: [libc::c_char; libc::IFNAMSIZ],
 }
 
-impl IfreqWrapper {
+impl Default for IfreqIfrn {
+    #[inline(always)]
+    fn default() -> Self {
+        unsafe { zeroed() }
+    }
+}
+
+#[repr(C)]
+#[derive(Copy, Clone)]
+pub union IfreqIfru {
+    /// `ifr_data`.
+    ///
+    /// Data for use by network interface.
+    pub(crate) ifru_data: *mut libc::c_char,
+}
+
+#[repr(C)]
+#[derive(Clone)]
+pub struct Ifreq {
+    pub ifr_name: [libc::c_char; libc::IFNAMSIZ],
+    pub ifr_ifru: IfreqIfru,
+}
+
+impl Ifreq {
     fn new() -> Self {
-        IfreqWrapper {
+        Ifreq {
             ..Default::default()
         }
     }
 
-    // pub fn from_name<E: error::Error + 'static>(name: &str) -> Result<ifreq_wrapper, IfError<E>> {
-    //     let ifreq_wrapper = ifreq_wrapper::new();
-    //     let r = ifreq_wrapper.set_name(name)?;
-    //     Ok(ifreq_wrapper)
-    // }
-    pub fn from_name(name: &str) -> Result<IfreqWrapper, IfError> {
-        let mut ifreq_wrapper = IfreqWrapper::new();
+    pub fn from_name(name: &str) -> Result<Ifreq, IfError> {
+        let mut ifreq_wrapper = Ifreq::new();
         ifreq_wrapper.set_name(name)?;
         Ok(ifreq_wrapper)
     }
@@ -79,14 +100,14 @@ impl IfreqWrapper {
             Err(IfError::IfNameToLong)
         } else {
             for (i, c) in name.as_bytes().iter().enumerate() {
-                self.ifreq.ifr_name[i] = *c as libc::c_char;
+                self.ifr_name[i] = *c as libc::c_char;
             }
             Ok(())
         }
     }
 }
 
-impl Default for IfreqWrapper {
+impl Default for Ifreq {
     fn default() -> Self {
         unsafe { zeroed() }
     }

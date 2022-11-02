@@ -1,9 +1,9 @@
-mod ethtool_channel;
 mod ethtool_info;
+pub mod ethtool_struct;
 mod ethtool_trait;
 mod ifreq;
 
-use ethtool_channel::ethtool_channels;
+use ethtool_struct::ethtool_channels;
 
 pub fn get_channel_info(interface_name: &str) -> Result<ethtool_channels, ifreq::IfError> {
     let ethtool_command = ethtool_channels {
