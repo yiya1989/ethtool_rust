@@ -13,7 +13,9 @@ max_combined3 8
 
 # How to use ethtool lib:
 ```
-# look up examples channel.rs
+# example look up examples channel.rs
+
+use ethtool;
 
 # get channel info
 let channel_info_result = ethtool::get_channel_info("eth0");
