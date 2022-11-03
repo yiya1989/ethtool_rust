@@ -6,7 +6,10 @@ pub(crate) const ETHTOOL_GCHANNELS: u32 = 0x0000003C;
 /// Set number of channels.
 pub(crate) const ETHTOOL_SCHANNELS: u32 = 0x0000003D;
 
+#[cfg(target_env = "musl")]
 pub(crate) const SIOCETHTOOL: libc::c_int = 0x00008946;
+#[cfg(not(target_env = "musl"))]
+pub(crate) const SIOCETHTOOL: libc::c_ulong = 0x00008946;
 
 pub struct EthoolInfo {
     interface_fd: i32,
