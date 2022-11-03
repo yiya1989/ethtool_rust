@@ -1,6 +1,6 @@
 # Run example:
 ```
-# cargo run --package ethtool --example channel
+# RUSTFLAGS=" --deny warnings" cargo run --target x86_64-unknown-linux-musl --package ethtool --example channel
     Finished dev [unoptimized + debuginfo] target(s) in 0.00s
      Running `target/debug/examples/channel`
 current channel_info: ethtool_channels { cmd: 60, max_rx: 0, max_tx: 0, max_other: 0, max_combined: 8, rx_count: 0, tx_count: 0, other_count: 0, combined_count: 8 }
